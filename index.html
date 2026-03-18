@@ -5,50 +5,67 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QAAgility ROI Calculator</title>
   <style>
-    html, body { margin:0; padding:0; }
+    html, body { margin:0; padding:0; height:100%; }
     body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      background:#0B1B2E;
-      color:rgba(255,255,255,0.92);
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:24px;
+      background: radial-gradient(1200px 600px at 20% 20%, rgba(33,188,238,0.18), transparent 55%),
+                  radial-gradient(900px 500px at 85% 30%, rgba(17,107,248,0.22), transparent 60%),
+                  linear-gradient(135deg, #0A2540, #071A2C);
     }
-    .card {
-      max-width: 560px;
-      width: 100%;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 16px;
-      padding: 18px 18px;
-      backdrop-filter: blur(10px);
+    .loader {
+      position:fixed; inset:0;
+      display:grid; place-items:center;
+      color:rgba(255,255,255,0.85);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      letter-spacing: 0.2px;
     }
-    .title { font-weight:700; font-size:16px; margin-bottom:6px; }
-    .sub { font-size:13px; color:rgba(255,255,255,0.7); line-height:1.5; }
-    .sub a { color:#BDF2FF; }
+    .loader-inner { display:flex; align-items:center; gap:12px; }
+    .dot {
+      width:10px; height:10px; border-radius:999px;
+      background: rgba(255,255,255,0.9);
+      box-shadow: 0 0 0 6px rgba(255,255,255,0.08);
+      animation: pulse 1.1s ease-in-out infinite;
+    }
+    .label { font-size:14px; font-weight:600; }
+    @keyframes pulse { 0%,100% { transform:scale(1); opacity:0.75; } 50% { transform:scale(1.25); opacity:1; } }
   </style>
 </head>
 <body>
-  <div class="card" role="status" aria-live="polite">
-    <div class="title">Loading ROI Calculator…</div>
-    <div class="sub">If it doesn’t load, open <a href="./qaagility-roi-calculator.html">qaagility-roi-calculator.html</a>.</div>
+  <div class="loader" aria-hidden="true">
+    <div class="loader-inner">
+      <span class="dot"></span>
+      <span class="label">Loading…</span>
+    </div>
   </div>
 
   <script>
-    (async () => {
-      try {
-        const res = await fetch('./qaagility-roi-calculator.html', { cache: 'no-store' });
-        const html = await res.text();
-        document.open();
-        document.write(html);
-        document.close();
-      } catch (e) {
-        const el = document.querySelector('.sub');
-        if (el) el.textContent = 'Failed to load the calculator. Please open /qaagility-roi-calculator.html directly.';
+    async function loadRoot() {
+      const res = await fetch('./qaagility-roi-calculator.html', { cache: 'no-store' });
+      if (!res.ok) throw new Error('Fetch failed');
+
+      const htmlText = await res.text();
+      const doc = new DOMParser().parseFromString(htmlText, 'text/html');
+
+      // Replace head (styles, fonts, metadata)
+      document.title = doc.title || document.title;
+      document.head.innerHTML = doc.head.innerHTML;
+
+      // Replace body markup (but scripts won't auto-execute via innerHTML)
+      const scripts = Array.from(doc.body.querySelectorAll('script'));
+      scripts.forEach(s => s.remove());
+      document.body.innerHTML = doc.body.innerHTML;
+
+      // Re-insert scripts so they execute
+      for (const s of scripts) {
+        const ns = document.createElement('script');
+        for (const attr of s.getAttributeNames()) ns.setAttribute(attr, s.getAttribute(attr));
+        if (s.textContent) ns.textContent = s.textContent;
+        document.body.appendChild(ns);
       }
-    })();
+    }
+
+    loadRoot().catch(() => {
+      document.body.innerHTML = '<div style="min-height:100vh;display:grid;place-items:center;padding:24px;color:#fff;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;"><div style="max-width:640px;line-height:1.6;"><div style="font-weight:800;font-size:18px;margin-bottom:8px;">Unable to load the calculator</div><div style="opacity:0.85;font-size:14px;">Please open <a href=\"./qaagility-roi-calculator.html\" style=\"color:#BDF2FF;\">/qaagility-roi-calculator.html</a>.</div></div></div>';
+    });
   </script>
 </body>
 </html>
