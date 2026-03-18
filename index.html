@@ -1,13 +1,54 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QAAgility ROI Calculator</title>
-  <meta http-equiv="refresh" content="0; url=./qaagility-roi-calculator.html">
-  <link rel="canonical" href="./qaagility-roi-calculator.html">
+  <style>
+    html, body { margin:0; padding:0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background:#0B1B2E;
+      color:rgba(255,255,255,0.92);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .card {
+      max-width: 560px;
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 18px 18px;
+      backdrop-filter: blur(10px);
+    }
+    .title { font-weight:700; font-size:16px; margin-bottom:6px; }
+    .sub { font-size:13px; color:rgba(255,255,255,0.7); line-height:1.5; }
+    .sub a { color:#BDF2FF; }
+  </style>
 </head>
 <body>
-  <p>Redirecting to <a href="./qaagility-roi-calculator.html">QAAgility ROI Calculator</a>...</p>
+  <div class="card" role="status" aria-live="polite">
+    <div class="title">Loading ROI Calculator…</div>
+    <div class="sub">If it doesn’t load, open <a href="./qaagility-roi-calculator.html">qaagility-roi-calculator.html</a>.</div>
+  </div>
+
+  <script>
+    (async () => {
+      try {
+        const res = await fetch('./qaagility-roi-calculator.html', { cache: 'no-store' });
+        const html = await res.text();
+        document.open();
+        document.write(html);
+        document.close();
+      } catch (e) {
+        const el = document.querySelector('.sub');
+        if (el) el.textContent = 'Failed to load the calculator. Please open /qaagility-roi-calculator.html directly.';
+      }
+    })();
+  </script>
 </body>
 </html>
