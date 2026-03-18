@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QAAgility ROI Calculator — Human + AI QA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ============================================================
+       DESIGN TOKENS — mirrored from global.css
+    ============================================================ */
+    :root {
+      --color-primary:        #116BF8;
+      --color-primary-light:  rgba(17,107,248,0.10);
+      --color-primary-dark:   #0D55C8;
+      --color-secondary:      #21BCEE;
+      --color-secondary-light:rgba(33,188,238,0.10);
+
+      --color-dark:           #000000;
+      --color-dark-slate:     #0A2540;
+      --color-slate:          #0F172A;
+      --color-gray:           #4A5568;
+      --color-gray-light:     #6A7282;
+      --color-gray-border:    #E5E7EB;
+
+      --color-bg-white:       #FFFFFF;
+      --color-bg-light:       #F6F9FF;
+      --color-bg-lighter:     #F8FAFF;
+
+      --color-success:        #10B981;
+      --color-success-light:  rgba(16,185,129,0.10);
+      --color-warning:        #F59E0B;
+      --color-warning-light:  rgba(245,158,11,0.10);
+      --color-danger:         #EF4444;
+
+      --font-sans:    'Inter', sans-serif;
+      --font-heading: 'Hanken Grotesk', sans-serif;
+
+      --container-max-width: 1280px;
+      --border-radius-base: 0.5rem;
+      --border-radius-lg:   0.75rem;
+      --border-radius-xl:   1rem;
+
+      --transition-base:   all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-smooth: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+      --shadow-sm:   0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md:   0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+      --shadow-lg:   0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+      --shadow-card: 0px 1px 2px -1px rgba(0,0,0,0.1), 0px 1px 3px rgba(0,0,0,0.1);
+      --shadow-card-hover: 0 4px 20px rgba(0,0,0,0.08);
+    }
+
+    /* ============================================================
+       RESET & BASE
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: var(--font-sans);
+      color: var(--color-gray);
+      background: var(--color-bg-white);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    h1,h2,h3,h4,h5,h6 {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      color: var(--color-slate);
+      margin: 0;
+    }
+    h1 { font-size: clamp(36px,5vw,60px); line-height:1.15; letter-spacing:-1.12px; }
+    h2 { font-size: clamp(26px,3.5vw,42px); line-height:1.2; letter-spacing:-0.8px; }
+    h3 { font-size: clamp(18px,2vw,22.5px); line-height:1.3; letter-spacing:-0.45px; }
+    h4 { font-size: clamp(16px,1.5vw,18px); line-height:1.4; }
+
+    p { font-size:16px; line-height:1.65; }
+    a { color:var(--color-primary); text-decoration:none; }
+
+    input[type="range"] { -webkit-appearance:none; appearance:none; width:100%; }
+    input[type="number"] { font-family:var(--font-sans); }
+
+    /* ============================================================
+       LAYOUT HELPERS
+    ============================================================ */
+    .container {
+      width:100%; max-width:var(--container-max-width);
+      margin:0 auto; padding:0 24px;
+    }
+    .section-padding { padding: 80px 0; }
+    .section-padding-sm { padding: 48px 0; }
+
+    /* ============================================================
+       NAVBAR
+    ============================================================ */
+    .navbar {
+      position: sticky; top:0; z-index:100;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--color-gray-border);
+    }
+    .navbar-inner {
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 14px 24px; max-width:var(--container-max-width); margin:0 auto;
+    }
+    .navbar-logo {
+      display:flex; align-items:center; gap:10px;
+      font-family:var(--font-heading); font-weight:700; font-size:18px;
+      color:var(--color-slate); text-decoration:none;
+    }
+    .navbar-logo-image {
+      height:52px;
+      width:auto;
+      display:block;
+    }
+    .navbar-logo .logo-badge {
+      display:inline-flex; align-items:center; justify-content:center;
+      width:32px; height:32px; border-radius:8px;
+      background: var(--color-primary); color:#fff; font-size:13px; font-weight:700;
+    }
+    .navbar-cta {
+      display:inline-flex; align-items:center; gap:8px;
+      background:var(--color-primary); color:#fff;
+      padding:10px 20px; border-radius:8px; font-size:14px; font-weight:500;
+      transition:var(--transition-base); text-decoration:none;
+      box-shadow: 0 4px 14px rgba(17,107,248,0.2);
+    }
+    .navbar-cta:hover {
+      background:var(--color-primary-dark);
+      transform:translateY(-1px);
+      box-shadow: 0 6px 20px rgba(17,107,248,0.3);
+    }
+
+    /* ============================================================
+       HERO SECTION
+    ============================================================ */
+    .hero {
+      background: linear-gradient(135deg, #0A347A 0%, var(--color-primary-dark) 32%, var(--color-primary) 68%, var(--color-secondary) 100%);
+      position:relative; overflow:hidden;
+    }
+    .hero::before {
+      content:''; position:absolute; inset:0;
+      background: linear-gradient(180deg, rgba(10,37,64,0.18) 0%, rgba(10,37,64,0.30) 100%),
+                  radial-gradient(ellipse 60% 60% at 70% 50%, rgba(17,107,248,0.18) 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 40% at 20% 80%, rgba(33,188,238,0.12) 0%, transparent 60%);
+    }
+    .hero-grid {
+      position:absolute; inset:0; opacity:0.04;
+      background-image: linear-gradient(var(--color-primary) 1px, transparent 1px),
+                        linear-gradient(90deg, var(--color-primary) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .hero-inner {
+      position:relative; z-index:1;
+      padding: 72px 24px 80px;
+      max-width:var(--container-max-width); margin:0 auto;
+      display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;
+    }
+    .hero-copy { max-width: 640px; }
+    .hero-badge {
+      display:inline-flex; align-items:center; gap:8px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.22);
+      padding:6px 14px; border-radius:100px;
+      font-size:12px; font-weight:600; color:rgba(255,255,255,0.92);
+      letter-spacing:0.5px; text-transform:uppercase; margin-bottom:20px;
+    }
+    .hero-badge .dot { width:6px; height:6px; border-radius:50%; background:var(--color-secondary); }
+    .hero h1 {
+      color:#fff;
+      margin-bottom:20px;
+      font-size: clamp(36px, 5vw, 62px);
+      line-height: 1.08;
+      letter-spacing: -1.25px;
+      text-wrap: balance;
+      text-shadow: 0 2px 14px rgba(9, 27, 48, 0.35);
+    }
+    .hero h1 span {
+      color: #EAF8FF;
+      text-shadow: 0 0 18px rgba(33,188,238,0.35);
+    }
+    .hero p {
+      color:rgba(255,255,255,0.9);
+      font-size:18px;
+      line-height:1.7;
+      margin-bottom:32px;
+      max-width: 60ch;
+      text-wrap: pretty;
+    }
+
+    .hero-stats {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:8px;
+    }
+    .hero-stat {
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:12px; padding:16px;
+    }
+    .hero-stat .val {
+      font-family:var(--font-heading); font-size:28px; font-weight:700;
+      color:#fff; line-height:1;
+    }
+    .hero-stat .val span { color:var(--color-secondary); }
+    .hero-stat .lbl {
+      font-size:12px; color:rgba(255,255,255,0.5); margin-top:4px; line-height:1.4;
+    }
+
+    /* Quick-win pill */
+    .hero-calc-preview {
+      background:rgba(8, 28, 54, 0.34);
+      border:1px solid rgba(255,255,255,0.18);
+      backdrop-filter: blur(4px);
+      border-radius:20px; padding:32px;
+    }
+    .hcp-title {
+      font-family:var(--font-heading); font-weight:700; color:#fff;
+      font-size:15px; margin-bottom:24px; opacity:1;
+    }
+    .hcp-row {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.08);
+      font-size:14px;
+    }
+    .hcp-row:last-child { border-bottom:none; }
+    .hcp-row .lbl { color:rgba(255,255,255,0.9); font-weight:500; }
+    .hcp-row .val-before { color:#FFD4D4; font-weight:700; }
+    .hcp-row .val-after  { color:#BDF2FF; font-weight:700; }
+    .hcp-savings {
+      margin-top:20px; padding:16px; border-radius:12px;
+      background: linear-gradient(135deg, rgba(17,107,248,0.25), rgba(33,188,238,0.15));
+      border:1px solid rgba(33,188,238,0.34);
+      text-align:center;
+    }
+    .hcp-savings .s-label { font-size:12px; color:rgba(255,255,255,0.92); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; }
+    .hcp-savings .s-val {
+      font-family:var(--font-heading); font-size:36px; font-weight:800; color:#D8F8FF;
+      text-shadow: 0 0 18px rgba(33,188,238,0.35);
+    }
+
+    /* ============================================================
+       SUBHEADING LABEL
+    ============================================================ */
+    .subheading {
+      display:block; color:var(--color-primary);
+      font-size:13px; font-weight:600; letter-spacing:0.7px;
+      text-transform:uppercase; margin-bottom:12px;
+    }
+
+    /* ============================================================
+       SECTION TITLES
+    ============================================================ */
+    .section-title { margin-bottom:12px; }
+    .section-desc { font-size:17px; color:var(--color-gray-light); max-width:600px; }
+    .section-header { margin-bottom:48px; }
+    .section-header.center { text-align:center; }
+    .section-header.center .section-desc { margin:0 auto; }
+
+    /* ============================================================
+       PROBLEM STRIP
+    ============================================================ */
+    .problem-strip {
+      background:var(--color-bg-light);
+      border-top:1px solid var(--color-gray-border);
+      border-bottom:1px solid var(--color-gray-border);
+      padding:40px 24px;
+    }
+    .problem-strip-inner {
+      max-width:var(--container-max-width); margin:0 auto;
+      display:grid; grid-template-columns:repeat(4,1fr); gap:24px;
+    }
+    .ps-item {
+      display:flex; flex-direction:column; gap:6px;
+      padding:20px; background:#fff; border-radius:12px;
+      border:1px solid var(--color-gray-border);
+      box-shadow: var(--shadow-sm);
+    }
+    .ps-item .ps-icon {
+      width:36px; height:36px; border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:18px; margin-bottom:4px;
+    }
+    .ps-item .ps-icon.red    { background:rgba(239,68,68,0.1); }
+    .ps-item .ps-icon.orange { background:rgba(245,158,11,0.1); }
+    .ps-item .ps-icon.purple { background:rgba(139,92,246,0.1); }
+    .ps-item .ps-icon.blue   { background:var(--color-primary-light); }
+    .ps-item h4 { font-size:14px; color:var(--color-slate); }
+    .ps-item p  { font-size:13px; color:var(--color-gray-light); line-height:1.5; }
+
+    /* ============================================================
+       CALCULATOR SECTION
+    ============================================================ */
+    .calc-section { background:var(--color-bg-white); }
+
+    .calc-layout {
+      display:grid; grid-template-columns:1fr 1.1fr; gap:32px; align-items:start;
+    }
+
+    /* Input Panel */
+    .calc-panel {
+      background:#fff; border-radius:16px; overflow:hidden;
+      border:1px solid var(--color-gray-border);
+      box-shadow: var(--shadow-md);
+    }
+    .calc-panel-header {
+      background:var(--color-dark-slate); padding:20px 28px;
+      display:flex; align-items:center; gap:12px;
+    }
+    .calc-panel-header .panel-icon {
+      width:36px; height:36px; border-radius:8px;
+      background:rgba(255,255,255,0.1);
+      display:flex; align-items:center; justify-content:center; font-size:18px;
+    }
+    .calc-panel-header h3 { color:#fff; font-size:16px; }
+    .calc-panel-header p  { color:rgba(255,255,255,0.55); font-size:12px; margin-top:2px; }
+
+    .calc-panel-body { padding:28px; }
+
+    .input-section { margin-bottom:28px; }
+    .input-section-title {
+      font-family:var(--font-heading); font-weight:600; font-size:13px;
+      color:var(--color-slate); text-transform:uppercase; letter-spacing:0.6px;
+      margin-bottom:16px; padding-bottom:8px;
+      border-bottom:1px solid var(--color-gray-border);
+    }
+
+    .input-row {
+      display:flex; flex-direction:column; gap:6px; margin-bottom:16px;
+    }
+    .input-row:last-child { margin-bottom:0; }
+    .input-row label {
+      font-size:13px; font-weight:500; color:var(--color-slate);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .input-row label .hint {
+      font-size:11px; font-weight:400; color:var(--color-gray-light);
+    }
+
+    .input-with-prefix {
+      display:flex; align-items:center;
+      border:1px solid var(--color-gray-border); border-radius:8px; overflow:hidden;
+      background:#fff; transition:var(--transition-base);
+    }
+    .input-with-prefix:focus-within {
+      border-color:var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(17,107,248,0.1);
+    }
+    .input-with-prefix .prefix {
+      padding:0 12px; background:var(--color-bg-light);
+      border-right:1px solid var(--color-gray-border);
+      font-size:13px; color:var(--color-gray-light); height:40px;
+      display:flex; align-items:center; white-space:nowrap; flex-shrink:0;
+    }
+    .input-with-prefix input {
+      flex:1; border:none; outline:none; padding:0 12px;
+      font-size:14px; color:var(--color-slate); height:40px;
+      font-family:var(--font-sans); background:transparent;
+    }
+
+    /* Slider row */
+    .slider-row { margin-bottom:16px; }
+    .slider-row:last-child { margin-bottom:0; }
+    .slider-row label {
+      display:flex; justify-content:space-between; align-items:center;
+      font-size:13px; font-weight:500; color:var(--color-slate); margin-bottom:8px;
+    }
+    .slider-row label .slider-val {
+      font-family:var(--font-heading); font-size:14px; font-weight:600;
+      color:var(--color-primary);
+      background:var(--color-primary-light); padding:2px 10px; border-radius:20px;
+    }
+    input[type="range"] {
+      height:4px; background:var(--color-gray-border); border-radius:100px;
+      outline:none; cursor:pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none; appearance:none;
+      width:18px; height:18px; border-radius:50%;
+      background:var(--color-primary); cursor:pointer;
+      border:2px solid #fff;
+      box-shadow: 0 2px 6px rgba(17,107,248,0.3);
+      transition:var(--transition-base);
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform:scale(1.2);
+      box-shadow: 0 4px 12px rgba(17,107,248,0.4);
+    }
+
+    /* Select */
+    .calc-select {
+      width:100%; height:40px; padding:0 12px;
+      border:1px solid var(--color-gray-border); border-radius:8px;
+      font-size:14px; color:var(--color-slate); font-family:var(--font-sans);
+      background:#fff; cursor:pointer; outline:none;
+      transition:var(--transition-base);
+    }
+    .calc-select:focus {
+      border-color:var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(17,107,248,0.1);
+    }
+
+    /* ============================================================
+       RESULTS PANEL
+    ============================================================ */
+    .results-panel {
+      display:flex; flex-direction:column; gap:20px;
+    }
+
+    /* Big savings card */
+    .savings-hero {
+      border-radius:16px; overflow:hidden;
+      background:linear-gradient(135deg, var(--color-dark-slate) 0%, #152E4D 100%);
+      position:relative;
+    }
+    .savings-hero::before {
+      content:''; position:absolute; inset:0;
+      background: radial-gradient(ellipse 70% 70% at 90% 20%, rgba(17,107,248,0.2) 0%, transparent 60%);
+    }
+    .savings-hero-inner { position:relative; z-index:1; padding:28px; }
+    .savings-hero-label {
+      font-size:11px; font-weight:600; letter-spacing:0.8px; text-transform:uppercase;
+      color:rgba(255,255,255,0.5); margin-bottom:8px;
+    }
+    .savings-hero-amount {
+      font-family:var(--font-heading); font-size:clamp(36px,4vw,52px); font-weight:800;
+      color:#fff; line-height:1; margin-bottom:4px;
+    }
+    .savings-hero-amount span { color:var(--color-secondary); }
+    .savings-hero-sub {
+      font-size:13px; color:rgba(255,255,255,0.5); margin-bottom:24px;
+    }
+    .savings-hero-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+    }
+    .shg-item {
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:10px; padding:14px;
+    }
+    .shg-item .v {
+      font-family:var(--font-heading); font-size:22px; font-weight:700; color:#fff;
+    }
+    .shg-item .v.green { color:#34D399; }
+    .shg-item .v.blue  { color:var(--color-secondary); }
+    .shg-item .l { font-size:11px; color:rgba(255,255,255,0.45); margin-top:3px; }
+
+    /* Cost breakdown card */
+    .breakdown-card {
+      background:#fff; border-radius:16px; overflow:hidden;
+      border:1px solid var(--color-gray-border);
+      box-shadow: var(--shadow-card);
+    }
+    .breakdown-card-header {
+      padding:16px 24px;
+      border-bottom:1px solid var(--color-gray-border);
+      background:var(--color-bg-light);
+    }
+    .breakdown-card-header h4 { font-size:14px; color:var(--color-slate); }
+
+    .breakdown-table { width:100%; border-collapse:collapse; }
+    .breakdown-table th {
+      font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;
+      color:var(--color-gray-light); padding:10px 20px; text-align:right;
+      background:var(--color-bg-lighter); border-bottom:1px solid var(--color-gray-border);
+    }
+    .breakdown-table th:first-child { text-align:left; }
+    .breakdown-table td {
+      font-size:13px; padding:12px 20px; border-bottom:1px solid var(--color-bg-light);
+      text-align:right; color:var(--color-gray);
+    }
+    .breakdown-table td:first-child { text-align:left; color:var(--color-slate); font-weight:500; }
+    .breakdown-table tr:last-child td { border-bottom:none; }
+    .breakdown-table .before { color:var(--color-danger); font-weight:600; }
+    .breakdown-table .after  { color:var(--color-success); font-weight:600; }
+    .breakdown-table .saving-pct {
+      display:inline-flex; align-items:center; gap:4px;
+      font-size:11px; font-weight:600; color:var(--color-success);
+      background:var(--color-success-light); padding:2px 8px; border-radius:20px;
+    }
+    .breakdown-table tfoot td {
+      background:var(--color-bg-light); font-weight:700;
+      color:var(--color-slate); border-top:2px solid var(--color-gray-border);
+    }
+
+    /* ============================================================
+       COMPARE TABLE SECTION
+    ============================================================ */
+    .compare-section { background:var(--color-bg-light); }
+
+    .compare-wrapper {
+      overflow-x:auto; border-radius:16px;
+      border:1px solid var(--color-gray-border);
+      box-shadow: var(--shadow-lg);
+    }
+    .compare-table {
+      width:100%; border-collapse:collapse; min-width:700px;
+    }
+    .compare-table thead tr {
+      background:var(--color-dark-slate);
+    }
+    .compare-table thead th {
+      padding:20px 24px; font-family:var(--font-heading);
+      font-size:14px; font-weight:600;
+      border:none;
+    }
+    .compare-table thead th:first-child {
+      color:rgba(255,255,255,0.6); font-size:12px;
+      text-transform:uppercase; letter-spacing:0.5px; text-align:left;
+    }
+    .compare-table thead th:nth-child(2) {
+      color:rgba(255,255,255,0.8); text-align:center;
+      border-left:1px solid rgba(255,255,255,0.08);
+    }
+    .compare-table thead th:nth-child(3) {
+      text-align:center;
+      border-left:1px solid rgba(255,255,255,0.08);
+    }
+    .compare-table thead th:nth-child(3) .th-pill {
+      display:inline-flex; align-items:center; gap:6px;
+      background:var(--color-primary); color:#fff;
+      padding:4px 14px; border-radius:100px; font-size:13px;
+    }
+    .compare-table thead th:last-child {
+      color:var(--color-secondary); text-align:center;
+      border-left:1px solid rgba(255,255,255,0.08);
+    }
+
+    .compare-table tbody tr {
+      background:#fff; transition:var(--transition-base);
+    }
+    .compare-table tbody tr:nth-child(even) {
+      background:var(--color-bg-lighter);
+    }
+    .compare-table tbody tr:hover { background:var(--color-primary-light); }
+
+    .compare-table tbody td {
+      padding:14px 24px; font-size:14px;
+      border-bottom:1px solid var(--color-gray-border);
+    }
+    .compare-table tbody td:first-child {
+      font-weight:500; color:var(--color-slate);
+    }
+    .compare-table tbody td:not(:first-child) {
+      text-align:center; border-left:1px solid var(--color-gray-border);
+    }
+
+    .compare-table .category-row td {
+      background:var(--color-bg-light) !important;
+      font-size:11px; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.6px; color:var(--color-gray-light);
+      padding:10px 24px;
+    }
+    .compare-table tbody tr:last-child td { border-bottom:none; }
+
+    .tick { color:var(--color-success); font-size:18px; }
+    .cross { color:var(--color-danger); font-size:18px; }
+    .partial { color:var(--color-warning); font-size:18px; }
+    .na { color:var(--color-gray-light); font-size:13px; }
+
+    .compare-badge {
+      display:inline-block; font-size:11px; font-weight:600;
+      padding:3px 10px; border-radius:20px;
+    }
+    .cb-green  { background:var(--color-success-light); color:var(--color-success); }
+    .cb-red    { background:rgba(239,68,68,0.1); color:var(--color-danger); }
+    .cb-orange { background:rgba(245,158,11,0.1); color:var(--color-warning); }
+    .cb-blue   { background:var(--color-primary-light); color:var(--color-primary); }
+
+    /* ============================================================
+       ENGAGEMENT MODEL
+    ============================================================ */
+    .engagement-section { background:#fff; }
+
+    .engagement-grid {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:24px;
+    }
+    .engagement-card {
+      border-radius:16px; overflow:hidden;
+      border:1px solid var(--color-gray-border);
+      box-shadow: var(--shadow-card);
+      transition:var(--transition-smooth);
+    }
+    .engagement-card:hover {
+      transform:translateY(-4px);
+      box-shadow: var(--shadow-card-hover);
+      border-color:rgba(17,107,248,0.2);
+    }
+    .ec-header { padding:24px; position:relative; overflow:hidden; }
+    .ec-header.blue  { background:linear-gradient(135deg,#EBF3FF,#DBEAFE); }
+    .ec-header.dark  { background:linear-gradient(135deg,var(--color-dark-slate),#152E4D); }
+    .ec-header.green { background:linear-gradient(135deg,#ECFDF5,#D1FAE5); }
+    .ec-icon {
+      width:44px; height:44px; border-radius:10px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; margin-bottom:12px;
+    }
+    .ec-icon.blue  { background:#fff; }
+    .ec-icon.dark  { background:rgba(255,255,255,0.1); }
+    .ec-icon.green { background:#fff; }
+    .ec-tag {
+      font-size:10px; font-weight:700; letter-spacing:0.8px;
+      text-transform:uppercase; padding:3px 10px; border-radius:20px;
+      position:absolute; top:16px; right:16px;
+    }
+    .ec-tag.blue  { background:var(--color-primary); color:#fff; }
+    .ec-tag.dark  { background:var(--color-secondary); color:var(--color-dark-slate); }
+    .ec-tag.green { background:var(--color-success); color:#fff; }
+    .ec-header h3.white { color:#fff; }
+    .ec-header p.white  { color:rgba(255,255,255,0.6); }
+    .ec-body { padding:24px; }
+    .ec-body ul { list-style:none; padding:0; margin:0 0 20px; }
+    .ec-body ul li {
+      display:flex; gap:10px; font-size:13px; color:var(--color-gray);
+      padding:6px 0; border-bottom:1px solid var(--color-bg-light);
+    }
+    .ec-body ul li:last-child { border-bottom:none; }
+    .ec-body ul li .li-icon { color:var(--color-success); flex-shrink:0; margin-top:1px; }
+    .ec-price {
+      font-family:var(--font-heading); font-size:22px; font-weight:700;
+      color:var(--color-slate);
+    }
+    .ec-price .per { font-size:13px; font-weight:400; color:var(--color-gray-light); }
+    .ec-savings-pill {
+      display:inline-flex; align-items:center; gap:5px;
+      background:var(--color-success-light); color:var(--color-success);
+      font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px;
+      margin-left:8px;
+    }
+
+    /* ============================================================
+       VALUE METRICS (ROI TIMELINE)
+    ============================================================ */
+    .timeline-section { background:var(--color-bg-light); }
+
+    .timeline-track {
+      position:relative; padding:0 0 0 32px;
+    }
+    .timeline-track::before {
+      content:''; position:absolute; left:10px; top:8px; bottom:0;
+      width:2px; background:linear-gradient(to bottom, var(--color-primary), var(--color-secondary));
+      border-radius:2px;
+    }
+    .timeline-item {
+      position:relative; margin-bottom:32px;
+    }
+    .timeline-item:last-child { margin-bottom:0; }
+    .timeline-dot {
+      position:absolute; left:-28px; top:6px;
+      width:16px; height:16px; border-radius:50%;
+      background:var(--color-primary); border:3px solid #fff;
+      box-shadow: 0 0 0 2px var(--color-primary);
+    }
+    .timeline-item .ti-phase {
+      font-size:11px; font-weight:600; letter-spacing:0.6px;
+      text-transform:uppercase; color:var(--color-primary); margin-bottom:4px;
+    }
+    .timeline-item .ti-title {
+      font-family:var(--font-heading); font-size:17px; font-weight:600;
+      color:var(--color-slate); margin-bottom:8px;
+    }
+    .timeline-item .ti-desc {
+      font-size:14px; color:var(--color-gray-light); margin-bottom:12px;
+      line-height:1.6;
+    }
+    .ti-pills { display:flex; flex-wrap:wrap; gap:8px; }
+    .ti-pill {
+      font-size:12px; font-weight:500; padding:4px 12px; border-radius:20px;
+      background:var(--color-primary-light); color:var(--color-primary);
+    }
+
+    /* ============================================================
+       CTA STRIP
+    ============================================================ */
+    .cta-section {
+      background:linear-gradient(135deg, var(--color-dark-slate) 0%, #152E4D 100%);
+      position:relative; overflow:hidden;
+    }
+    .cta-section::before {
+      content:''; position:absolute; inset:0;
+      background: radial-gradient(ellipse 50% 80% at 100% 50%, rgba(17,107,248,0.2), transparent 60%),
+                  radial-gradient(ellipse 40% 60% at 0% 100%, rgba(33,188,238,0.1), transparent 60%);
+    }
+    .cta-inner {
+      position:relative; z-index:1;
+      padding:72px 24px; max-width:var(--container-max-width); margin:0 auto;
+      display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px;
+    }
+    .cta-inner h2 { color:#fff; }
+    .cta-inner h2 span { color:var(--color-secondary); }
+    .cta-inner p { color:rgba(255,255,255,0.6); font-size:17px; max-width:520px; }
+    .cta-buttons { display:flex; gap:16px; margin-top:20px; flex-wrap:wrap; justify-content:center; }
+    .btn-primary-cta {
+      display:inline-flex; align-items:center; gap:8px;
+      background:var(--color-primary); color:#fff;
+      padding:14px 28px; border-radius:10px;
+      font-weight:600; font-size:15px; cursor:pointer; border:none;
+      box-shadow: 0 4px 20px rgba(17,107,248,0.3);
+      transition:var(--transition-base); font-family:var(--font-sans);
+    }
+    .btn-primary-cta:hover { background:var(--color-primary-dark); transform:translateY(-2px); }
+    .btn-outline-cta {
+      display:inline-flex; align-items:center; gap:8px;
+      background:transparent; color:#fff;
+      padding:14px 28px; border-radius:10px;
+      font-weight:500; font-size:15px; cursor:pointer;
+      border:1px solid rgba(255,255,255,0.2);
+      transition:var(--transition-base); font-family:var(--font-sans);
+    }
+    .btn-outline-cta:hover { background:rgba(255,255,255,0.08); transform:translateY(-2px); }
+
+    /* ============================================================
+       FOOTER
+    ============================================================ */
+    .footer {
+      background:#EAF3FF;
+      border-top:1px solid #D6E6FF;
+      padding:32px 24px;
+    }
+    .footer-inner {
+      max-width:var(--container-max-width); margin:0 auto;
+      display:flex; justify-content:space-between; align-items:center;
+      flex-wrap:wrap; gap:16px;
+    }
+    .footer p { font-size:13px; color:rgba(15,23,42,0.7); margin:0; }
+    .footer-logo {
+      display:flex; align-items:center; gap:8px;
+      font-family:var(--font-heading); font-weight:700; font-size:15px; color:#fff;
+    }
+    .footer-logo-image {
+      height: 45px;
+      width: auto;
+      display: block;
+    }
+    .footer-logo .lb {
+      width:26px; height:26px; border-radius:6px;
+      background:var(--color-primary); color:#fff;
+      font-size:11px; font-weight:700;
+      display:flex; align-items:center; justify-content:center;
+    }
+
+    /* ============================================================
+       ANIMATIONS
+    ============================================================ */
+    @keyframes fadeInUp {
+      from { opacity:0; transform:translateY(24px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes countUp {
+      from { opacity:0; }
+      to   { opacity:1; }
+    }
+    .animate-in {
+      animation: fadeInUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    .d1 { animation-delay:0.05s; }
+    .d2 { animation-delay:0.12s; }
+    .d3 { animation-delay:0.2s; }
+    .d4 { animation-delay:0.28s; }
+
+    /* Pulse for savings number */
+    @keyframes pulse-glow {
+      0%,100% { text-shadow: none; }
+      50%      { text-shadow: 0 0 30px rgba(33,188,238,0.4); }
+    }
+    .savings-hero-amount { animation: pulse-glow 3s ease-in-out infinite; }
+
+    /* ============================================================
+       PROGRESS BAR (for coverage %)
+    ============================================================ */
+    .progress-bar-wrap { background:var(--color-bg-light); border-radius:100px; height:8px; overflow:hidden; }
+    .progress-bar-fill {
+      height:100%; border-radius:100px;
+      background:linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+      transition:width 0.6s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+    @media (max-width: 960px) {
+      .hero-inner        { grid-template-columns:1fr; gap:40px; }
+      .calc-layout       { grid-template-columns:1fr; }
+      .engagement-grid   { grid-template-columns:1fr; }
+      .problem-strip-inner { grid-template-columns:1fr 1fr; }
+      .hero-stats        { grid-template-columns:1fr 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .problem-strip-inner { grid-template-columns:1fr; }
+      .hero-stats          { grid-template-columns:1fr 1fr; }
+      .savings-hero-grid   { grid-template-columns:1fr 1fr; }
+      .cta-buttons         { flex-direction:column; }
+      .hero-inner          { padding:56px 20px 64px; gap:30px; }
+      .hero h1             { font-size: clamp(30px, 10vw, 42px); line-height:1.12; letter-spacing:-0.7px; }
+      .hero h1 br          { display:none; }
+      .hero p              { font-size:16px; line-height:1.65; max-width:none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================================================================
+       NAVBAR
+  ================================================================ -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="#" class="navbar-logo">
+        <img class="navbar-logo-image" src="https://qaagility.s3.us-east-2.amazonaws.com/2b2b4734-32e3-48d9-b0aa-5ed7b41485a4.svg" alt="QAAgility Logo">
+      </a>
+      <a href="https://cal.com/qaagility/30min" class="navbar-cta" target="_blank" rel="noopener noreferrer">
+        📞 Book a Strategy Call
+      </a>
+    </div>
+  </nav>
+
+  <!-- ================================================================
+       HERO
+  ================================================================ -->
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-inner">
+      <div class="hero-copy animate-in d1">
+        <div class="hero-badge">
+          <span class="dot"></span>
+          ROI Calculator — Human + AI QA
+        </div>
+        <h1>See How Much Your<br><span>QA Is Really Costing</span><br>You</h1>
+        <p>Most engineering teams spend 25–35% of their total budget on quality assurance — yet over 40% of production bugs still slip through. QAAgility's Human + AI model does the same work with fewer resources and a technology layer that never sleeps.</p>
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <div class="val">34<span>%</span></div>
+            <div class="lbl">Avg. cost reduction achieved</div>
+          </div>
+          <div class="hero-stat">
+            <div class="val">2<span>×</span></div>
+            <div class="lbl">Faster release cycles</div>
+          </div>
+          <div class="hero-stat">
+            <div class="val">98<span>%</span></div>
+            <div class="lbl">Critical bug catch rate</div>
+          </div>
+        </div>
+      </div>
+      <div class="animate-in d3">
+        <div class="hero-calc-preview">
+          <div class="hcp-title">📊 Illustrative Benchmark — Mid-Market SaaS Team</div>
+          <div class="hcp-row">
+            <span class="lbl">QA headcount (FTEs)</span>
+            <span><span class="val-before">8 engineers</span> → <span class="val-after">4 engineers</span></span>
+          </div>
+          <div class="hcp-row">
+            <span class="lbl">Automation coverage</span>
+            <span><span class="val-before">35%</span> → <span class="val-after">78%</span></span>
+          </div>
+          <div class="hcp-row">
+            <span class="lbl">Avg. release cycle</span>
+            <span><span class="val-before">14 days</span> → <span class="val-after">7 days</span></span>
+          </div>
+          <div class="hcp-row">
+            <span class="lbl">Critical production bugs / yr</span>
+            <span><span class="val-before">23</span> → <span class="val-after">2–3</span></span>
+          </div>
+          <div class="hcp-row">
+            <span class="lbl">Annual QA spend</span>
+            <span><span class="val-before">$680K</span> → <span class="val-after">$445K</span></span>
+          </div>
+          <div class="hcp-savings">
+            <div class="s-label">Estimated Annual Savings</div>
+            <div class="s-val">$235,000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================
+       PROBLEM STRIP
+  ================================================================ -->
+  <section class="problem-strip">
+    <div class="problem-strip-inner">
+      <div class="ps-item animate-in d1">
+        <div class="ps-icon red">💸</div>
+        <h4>Headcount-Heavy Spend</h4>
+        <p>Traditional QA relies on ever-growing manual tester headcounts — every sprint adds cost with diminishing coverage returns.</p>
+      </div>
+      <div class="ps-item animate-in d2">
+        <div class="ps-icon orange">⏱️</div>
+        <h4>Release Velocity Drag</h4>
+        <p>Regression cycles take days, gating releases. Teams ship less and carry more technical risk the longer testing takes.</p>
+      </div>
+      <div class="ps-item animate-in d3">
+        <div class="ps-icon purple">🐛</div>
+        <h4>Production Bug Costs</h4>
+        <p>A single critical production defect costs 30× more to fix than a pre-production catch — plus reputational damage and SLA penalties.</p>
+      </div>
+      <div class="ps-item animate-in d4">
+        <div class="ps-icon blue">📉</div>
+        <h4>Low Automation ROI</h4>
+        <p>Internal automation investments often stall at 20–40% coverage due to script maintenance overhead and lack of AI intelligence.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================
+       CALCULATOR
+  ================================================================ -->
+  <section class="calc-section section-padding" id="calculator">
+    <div class="container">
+      <div class="section-header">
+        <span class="subheading">Interactive ROI Calculator</span>
+        <h2 class="section-title">Your Custom QA Cost Analysis</h2>
+        <p class="section-desc">Enter your current QA parameters. The calculator computes your projected savings under QAAgility's Human + AI engagement model — in real time.</p>
+      </div>
+
+      <div class="calc-layout">
+        <!-- ── INPUT PANEL ── -->
+        <div class="calc-panel animate-in d1">
+          <div class="calc-panel-header">
+            <div class="panel-icon">🔧</div>
+            <div>
+              <h3>Current QA Parameters</h3>
+              <p>Your team's baseline — adjust every input</p>
+            </div>
+          </div>
+          <div class="calc-panel-body">
+
+            <!-- TEAM & COST -->
+            <div class="input-section">
+              <div class="input-section-title">👥 Team &amp; Compensation</div>
+
+              <div class="input-row">
+                <label>
+                  QA Engineers (FTEs)
+                  <span class="hint">Full-time manual + automation</span>
+                </label>
+                <div class="input-with-prefix">
+                  <span class="prefix">Headcount</span>
+                  <input type="number" id="inp_fte" value="8" min="1" max="100" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+
+              <div class="input-row">
+                <label>
+                  Average Annual Salary / Engineer
+                  <span class="hint">All-in CTC incl. benefits</span>
+                </label>
+                <div class="input-with-prefix">
+                  <span class="prefix">USD / yr</span>
+                  <input type="number" id="inp_salary" value="75000" min="10000" max="300000" step="1000" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+
+              <div class="input-row">
+                <label>
+                  QA Manager / Lead (FTEs)
+                  <span class="hint">Dedicated oversight headcount</span>
+                </label>
+                <div class="input-with-prefix">
+                  <span class="prefix">Headcount</span>
+                  <input type="number" id="inp_leads" value="2" min="0" max="20" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+
+              <div class="input-row">
+                <label>
+                  Manager / Lead Annual Salary
+                </label>
+                <div class="input-with-prefix">
+                  <span class="prefix">USD / yr</span>
+                  <input type="number" id="inp_lead_sal" value="110000" min="10000" max="400000" step="1000" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+            </div>
+
+            <!-- TOOLING -->
+            <div class="input-section">
+              <div class="input-section-title">🛠 Tooling &amp; Infrastructure</div>
+
+              <div class="input-row">
+                <label>Annual Test Tool Licences</label>
+                <div class="input-with-prefix">
+                  <span class="prefix">USD / yr</span>
+                  <input type="number" id="inp_tools" value="28000" min="0" max="500000" step="500" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+
+              <div class="input-row">
+                <label>
+                  CI/CD Infrastructure &amp; Environments
+                  <span class="hint">Cloud, test env, pipelines</span>
+                </label>
+                <div class="input-with-prefix">
+                  <span class="prefix">USD / yr</span>
+                  <input type="number" id="inp_infra" value="18000" min="0" max="500000" step="500" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+
+              <div class="input-row">
+                <label>
+                  Automation Framework Maintenance
+                  <span class="hint">Dev hours × hourly rate</span>
+                </label>
+                <div class="input-with-prefix">
+                  <span class="prefix">USD / yr</span>
+                  <input type="number" id="inp_maint" value="22000" min="0" max="300000" step="500" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+            </div>
+
+            <!-- DEFECTS & RISK -->
+            <div class="input-section">
+              <div class="input-section-title">🐛 Defect &amp; Risk Costs</div>
+
+              <div class="slider-row">
+                <label>
+                  Critical Production Defects / Year
+                  <span class="slider-val" id="sv_bugs">12</span>
+                </label>
+                <input type="range" id="inp_bugs" min="0" max="100" value="12" oninput="syncSlider('inp_bugs','sv_bugs',''); calc();" />
+              </div>
+
+              <div class="input-row">
+                <label>
+                  Average Cost per Critical Defect
+                  <span class="hint">Fix + SLA + reputational cost</span>
+                </label>
+                <div class="input-with-prefix">
+                  <span class="prefix">USD</span>
+                  <input type="number" id="inp_bug_cost" value="12000" min="500" max="500000" step="500" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+
+              <div class="input-row">
+                <label>
+                  Annual Regulatory / Compliance Fines Risk
+                  <span class="hint">Estimated exposure if QA fails</span>
+                </label>
+                <div class="input-with-prefix">
+                  <span class="prefix">USD</span>
+                  <input type="number" id="inp_fine" value="25000" min="0" max="5000000" step="1000" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+            </div>
+
+            <!-- VELOCITY -->
+            <div class="input-section">
+              <div class="input-section-title">🚀 Release Velocity</div>
+
+              <div class="slider-row">
+                <label>
+                  Average Days in QA per Release Cycle
+                  <span class="slider-val" id="sv_days">14</span>
+                </label>
+                <input type="range" id="inp_days" min="1" max="60" value="14" oninput="syncSlider('inp_days','sv_days',' days'); calc();" />
+              </div>
+
+              <div class="slider-row">
+                <label>
+                  Current Automation Coverage (%)
+                  <span class="slider-val" id="sv_auto">35%</span>
+                </label>
+                <input type="range" id="inp_auto" min="0" max="100" value="35" oninput="syncSlider('inp_auto','sv_auto','%'); calc();" />
+              </div>
+
+              <div class="input-row">
+                <label>
+                  Revenue per Day (to quantify velocity drag)
+                </label>
+                <div class="input-with-prefix">
+                  <span class="prefix">USD / day</span>
+                  <input type="number" id="inp_rev_day" value="8000" min="0" max="1000000" step="500" onchange="calc()" oninput="calc()" />
+                </div>
+              </div>
+            </div>
+
+            <!-- REGION -->
+            <div class="input-section">
+              <div class="input-section-title">🌍 Engagement Region</div>
+              <div class="input-row">
+                <label>Target Delivery Region</label>
+                <select class="calc-select" id="inp_region" onchange="calc()">
+                  <option value="1.0">North America / Western Europe</option>
+                  <option value="0.55" selected>Middle East (UAE, Kuwait, KSA)</option>
+                  <option value="0.45">India / South Asia</option>
+                  <option value="0.5">Southeast Asia</option>
+                  <option value="0.75">UK / ANZ</option>
+                </select>
+              </div>
+              <div class="input-row">
+                <label>Engagement Model</label>
+                <select class="calc-select" id="inp_model" onchange="calc()">
+                  <option value="managed">Managed QA-as-a-Service (full ownership)</option>
+                  <option value="augment" selected>Team Augmentation (blended model)</option>
+                  <option value="project">Project-Based Sprint Testing</option>
+                </select>
+              </div>
+            </div>
+
+          </div><!-- /calc-panel-body -->
+        </div>
+
+        <!-- ── RESULTS PANEL ── -->
+        <div class="results-panel animate-in d2">
+
+          <!-- Savings hero card -->
+          <div class="savings-hero">
+            <div class="savings-hero-inner">
+              <div class="savings-hero-label">Projected Annual Net Savings with QAAgility</div>
+              <div class="savings-hero-amount">$<span id="r_savings">—</span></div>
+              <div class="savings-hero-sub" id="r_savings_sub">Fill in your parameters to see your ROI</div>
+              <div class="savings-hero-grid">
+                <div class="shg-item">
+                  <div class="v" id="r_roi_pct">—</div>
+                  <div class="l">ROI on QAAgility investment</div>
+                </div>
+                <div class="shg-item">
+                  <div class="v green" id="r_payback">—</div>
+                  <div class="l">Months to full payback</div>
+                </div>
+                <div class="shg-item">
+                  <div class="v blue" id="r_new_auto">—</div>
+                  <div class="l">New automation coverage</div>
+                </div>
+                <div class="shg-item">
+                  <div class="v" id="r_new_cycle">—</div>
+                  <div class="l">New QA cycle (days)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Detailed cost breakdown -->
+          <div class="breakdown-card">
+            <div class="breakdown-card-header">
+              <h4>📋 Line-by-Line Cost Comparison — Annual Basis</h4>
+            </div>
+            <table class="breakdown-table">
+              <thead>
+                <tr>
+                  <th>Cost Category</th>
+                  <th>Before (Current)</th>
+                  <th>After (QAAgility)</th>
+                  <th>Saving</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>QA Engineer Salaries</td>
+                  <td class="before" id="r_b_sal">—</td>
+                  <td class="after"  id="r_a_sal">—</td>
+                  <td><span class="saving-pct" id="r_p_sal">—</span></td>
+                </tr>
+                <tr>
+                  <td>QA Lead / Manager Cost</td>
+                  <td class="before" id="r_b_lead">—</td>
+                  <td class="after"  id="r_a_lead">—</td>
+                  <td><span class="saving-pct" id="r_p_lead">—</span></td>
+                </tr>
+                <tr>
+                  <td>Test Tool Licences</td>
+                  <td class="before" id="r_b_tools">—</td>
+                  <td class="after"  id="r_a_tools">—</td>
+                  <td><span class="saving-pct" id="r_p_tools">—</span></td>
+                </tr>
+                <tr>
+                  <td>CI/CD Infrastructure</td>
+                  <td class="before" id="r_b_infra">—</td>
+                  <td class="after"  id="r_a_infra">—</td>
+                  <td><span class="saving-pct" id="r_p_infra">—</span></td>
+                </tr>
+                <tr>
+                  <td>Automation Maintenance</td>
+                  <td class="before" id="r_b_maint">—</td>
+                  <td class="after"  id="r_a_maint">—</td>
+                  <td><span class="saving-pct" id="r_p_maint">—</span></td>
+                </tr>
+                <tr>
+                  <td>Production Defect Costs</td>
+                  <td class="before" id="r_b_bugs">—</td>
+                  <td class="after"  id="r_a_bugs">—</td>
+                  <td><span class="saving-pct" id="r_p_bugs">—</span></td>
+                </tr>
+                <tr>
+                  <td>Compliance / Regulatory Risk</td>
+                  <td class="before" id="r_b_fine">—</td>
+                  <td class="after"  id="r_a_fine">—</td>
+                  <td><span class="saving-pct" id="r_p_fine">—</span></td>
+                </tr>
+                <tr>
+                  <td>Release Velocity Drag (revenue)</td>
+                  <td class="before" id="r_b_vel">—</td>
+                  <td class="after"  id="r_a_vel">—</td>
+                  <td><span class="saving-pct" id="r_p_vel">—</span></td>
+                </tr>
+                <tr>
+                  <td><em>QAAgility Engagement Fee</em></td>
+                  <td class="na">N/A</td>
+                  <td class="before" id="r_a_fee">—</td>
+                  <td class="na">New spend</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td><strong>Total Annual QA Cost</strong></td>
+                  <td id="r_b_total">—</td>
+                  <td id="r_a_total">—</td>
+                  <td id="r_p_total">—</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Automation & velocity visual -->
+          <div class="breakdown-card">
+            <div class="breakdown-card-header">
+              <h4>📈 Automation Coverage &amp; Cycle Time Uplift</h4>
+            </div>
+            <div style="padding:20px 24px; display:flex; flex-direction:column; gap:16px;">
+              <div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:500; color:var(--color-slate); margin-bottom:8px;">
+                  <span>Automation Coverage</span>
+                  <span><span style="color:var(--color-danger)" id="prog_before_auto">35%</span> → <span style="color:var(--color-success)" id="prog_after_auto">78%</span></span>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <span style="font-size:12px; color:var(--color-gray-light); width:52px;">Before</span>
+                  <div class="progress-bar-wrap" style="flex:1;">
+                    <div class="progress-bar-fill" id="pb_before" style="width:35%; background:linear-gradient(90deg,#EF4444,#F87171);"></div>
+                  </div>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+                  <span style="font-size:12px; color:var(--color-gray-light); width:52px;">After</span>
+                  <div class="progress-bar-wrap" style="flex:1;">
+                    <div class="progress-bar-fill" id="pb_after" style="width:78%;"></div>
+                  </div>
+                </div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:4px;">
+                <div style="text-align:center; padding:14px; background:var(--color-bg-light); border-radius:10px;">
+                  <div style="font-family:var(--font-heading); font-size:20px; font-weight:700; color:var(--color-danger);" id="kpi_bugs_before">12</div>
+                  <div style="font-size:11px; color:var(--color-gray-light); margin-top:3px;">Prod. bugs / yr (now)</div>
+                </div>
+                <div style="text-align:center; padding:14px; background:var(--color-success-light); border-radius:10px;">
+                  <div style="font-family:var(--font-heading); font-size:20px; font-weight:700; color:var(--color-success);" id="kpi_bugs_after">2</div>
+                  <div style="font-size:11px; color:var(--color-gray-light); margin-top:3px;">Prod. bugs / yr (after)</div>
+                </div>
+                <div style="text-align:center; padding:14px; background:var(--color-primary-light); border-radius:10px;">
+                  <div style="font-family:var(--font-heading); font-size:20px; font-weight:700; color:var(--color-primary);" id="kpi_cycle">7d</div>
+                  <div style="font-size:11px; color:var(--color-gray-light); margin-top:3px;">New QA cycle time</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /results-panel -->
+      </div><!-- /calc-layout -->
+    </div>
+  </section>
+
+  <!-- ================================================================
+       COMPARE TABLE
+  ================================================================ -->
+  <section class="compare-section section-padding" id="compare">
+    <div class="container">
+      <div class="section-header center">
+        <span class="subheading">Capability Comparison</span>
+        <h2 class="section-title">Traditional QA vs QAAgility Human + AI</h2>
+        <p class="section-desc">A full-stack evaluation across every dimension that matters — speed, coverage, cost, risk, and scalability.</p>
+      </div>
+
+      <div class="compare-wrapper animate-in">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Capability / Dimension</th>
+              <th>In-House Manual QA</th>
+              <th><span class="th-pill">⚡ QAAgility H+AI</span></th>
+              <th>Impact Delivered</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <tr class="category-row"><td colspan="4">💰 Cost Structure</td></tr>
+            <tr>
+              <td>Staffing cost model</td>
+              <td><span class="compare-badge cb-red">Fixed high headcount</span></td>
+              <td><span class="compare-badge cb-green">Flex capacity + AI layer</span></td>
+              <td><span class="compare-badge cb-blue">34% avg. cost reduction</span></td>
+            </tr>
+            <tr>
+              <td>Tool licence overhead</td>
+              <td><span class="compare-badge cb-red">Multiple siloed tools</span></td>
+              <td><span class="compare-badge cb-green">Consolidated platform</span></td>
+              <td><span class="compare-badge cb-blue">60% tool cost saving</span></td>
+            </tr>
+            <tr>
+              <td>Automation maintenance burden</td>
+              <td><span class="compare-badge cb-red">High — manual script upkeep</span></td>
+              <td><span class="compare-badge cb-green">AI-self-healing scripts</span></td>
+              <td><span class="compare-badge cb-blue">Up to 70% less upkeep</span></td>
+            </tr>
+            <tr>
+              <td>Recruitment &amp; training costs</td>
+              <td><span class="compare-badge cb-red">Recurring hire cycle</span></td>
+              <td><span class="compare-badge cb-green">Plug-in certified team</span></td>
+              <td><span class="compare-badge cb-blue">Zero hiring friction</span></td>
+            </tr>
+            <tr>
+              <td>Scale-up cost</td>
+              <td><span class="compare-badge cb-red">Linear — add FTEs</span></td>
+              <td><span class="compare-badge cb-green">Near-zero marginal cost</span></td>
+              <td><span class="compare-badge cb-blue">Sub-linear scaling</span></td>
+            </tr>
+
+            <tr class="category-row"><td colspan="4">⚡ Speed &amp; Release Velocity</td></tr>
+            <tr>
+              <td>Regression cycle time</td>
+              <td><span class="compare-badge cb-red">7–14 days (manual)</span></td>
+              <td><span class="compare-badge cb-green">1–3 days (AI-automated)</span></td>
+              <td><span class="compare-badge cb-blue">2× faster releases</span></td>
+            </tr>
+            <tr>
+              <td>24/7 test execution</td>
+              <td><span class="cross">✗</span> Constrained by hours</td>
+              <td><span class="tick">✓</span> AI agents run overnight</td>
+              <td><span class="compare-badge cb-blue">Continuous pipeline</span></td>
+            </tr>
+            <tr>
+              <td>On-demand capacity surge</td>
+              <td><span class="partial">⚠</span> Overtime / contractors</td>
+              <td><span class="tick">✓</span> Elastic AI + team pool</td>
+              <td><span class="compare-badge cb-blue">Instant scale</span></td>
+            </tr>
+            <tr>
+              <td>CI/CD integration depth</td>
+              <td><span class="partial">⚠</span> Partial, tool-dependent</td>
+              <td><span class="tick">✓</span> Native pipeline hooks</td>
+              <td><span class="compare-badge cb-blue">Full shift-left QA</span></td>
+            </tr>
+
+            <tr class="category-row"><td colspan="4">🎯 Coverage &amp; Accuracy</td></tr>
+            <tr>
+              <td>Automation coverage</td>
+              <td><span class="compare-badge cb-red">20–40% typical</span></td>
+              <td><span class="compare-badge cb-green">70–80% guaranteed</span></td>
+              <td><span class="compare-badge cb-blue">2× more coverage</span></td>
+            </tr>
+            <tr>
+              <td>API &amp; backend testing</td>
+              <td><span class="partial">⚠</span> Limited scope</td>
+              <td><span class="tick">✓</span> Full API contract testing</td>
+              <td><span class="compare-badge cb-green">Zero API blind spots</span></td>
+            </tr>
+            <tr>
+              <td>Accessibility &amp; localisation (HXT)</td>
+              <td><span class="cross">✗</span> Usually skipped</td>
+              <td><span class="tick">✓</span> Built into every sprint</td>
+              <td><span class="compare-badge cb-green">Inclusive quality</span></td>
+            </tr>
+            <tr>
+              <td>Edge case &amp; exploratory testing</td>
+              <td><span class="tick">✓</span> Manual testers' strength</td>
+              <td><span class="tick">✓</span> AI + HXT domain experts</td>
+              <td><span class="compare-badge cb-blue">No coverage gap</span></td>
+            </tr>
+            <tr>
+              <td>Mobile + web + API — unified</td>
+              <td><span class="cross">✗</span> Siloed test tracks</td>
+              <td><span class="tick">✓</span> Single integrated suite</td>
+              <td><span class="compare-badge cb-green">Full lifecycle covered</span></td>
+            </tr>
+
+            <tr class="category-row"><td colspan="4">🛡 Risk, Security &amp; Compliance</td></tr>
+            <tr>
+              <td>Critical bug catch rate</td>
+              <td><span class="compare-badge cb-orange">60–70% pre-production</span></td>
+              <td><span class="compare-badge cb-green">98% pre-production</span></td>
+              <td><span class="compare-badge cb-blue">Near-zero prod. breaches</span></td>
+            </tr>
+            <tr>
+              <td>Security / DAST testing</td>
+              <td><span class="partial">⚠</span> Separate engagement</td>
+              <td><span class="tick">✓</span> Embedded in workflow</td>
+              <td><span class="compare-badge cb-green">Continuous security QA</span></td>
+            </tr>
+            <tr>
+              <td>Compliance reporting (SOC2, GDPR)</td>
+              <td><span class="cross">✗</span> Manual collation</td>
+              <td><span class="tick">✓</span> Automated audit trail</td>
+              <td><span class="compare-badge cb-blue">Regulator-ready reports</span></td>
+            </tr>
+            <tr>
+              <td>Production breach track record</td>
+              <td><span class="compare-badge cb-red">Industry avg: 4–8 / yr</span></td>
+              <td><span class="compare-badge cb-green">Zero breaches, 17+ months</span></td>
+              <td><span class="compare-badge cb-blue">Proven track record</span></td>
+            </tr>
+
+            <tr class="category-row"><td colspan="4">🔍 Visibility &amp; Reporting</td></tr>
+            <tr>
+              <td>Real-time test dashboards</td>
+              <td><span class="cross">✗</span> Lagged manual reports</td>
+              <td><span class="tick">✓</span> Live risk &amp; readiness view</td>
+              <td><span class="compare-badge cb-green">Dev + leadership aligned</span></td>
+            </tr>
+            <tr>
+              <td>Root-cause intelligence</td>
+              <td><span class="partial">⚠</span> Manual investigation</td>
+              <td><span class="tick">✓</span> AI root-cause tagging</td>
+              <td><span class="compare-badge cb-blue">Faster fix cycles</span></td>
+            </tr>
+            <tr>
+              <td>Stakeholder reporting cadence</td>
+              <td><span class="partial">⚠</span> Weekly / ad-hoc</td>
+              <td><span class="tick">✓</span> Continuous + sprint-end</td>
+              <td><span class="compare-badge cb-blue">Full transparency</span></td>
+            </tr>
+
+            <tr class="category-row"><td colspan="4">🤝 Partnership &amp; Support</td></tr>
+            <tr>
+              <td>Domain expertise (fintech, crypto)</td>
+              <td><span class="partial">⚠</span> Generalist testers</td>
+              <td><span class="tick">✓</span> Certified domain QA experts</td>
+              <td><span class="compare-badge cb-green">Fewer domain misses</span></td>
+            </tr>
+            <tr>
+              <td>Onboarding time</td>
+              <td><span class="compare-badge cb-red">8–12 weeks (hiring cycle)</span></td>
+              <td><span class="compare-badge cb-green">2–4 weeks (plug-in)</span></td>
+              <td><span class="compare-badge cb-blue">Time-to-value in weeks</span></td>
+            </tr>
+            <tr>
+              <td>Knowledge retention (attrition)</td>
+              <td><span class="compare-badge cb-red">High — avg 18% QA turnover</span></td>
+              <td><span class="compare-badge cb-green">Documented, transferable</span></td>
+              <td><span class="compare-badge cb-blue">Zero knowledge loss</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================
+       FOOTER
+  ================================================================ -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-logo">
+        <img class="footer-logo-image" src="https://qaagility.s3.us-east-2.amazonaws.com/2b2b4734-32e3-48d9-b0aa-5ed7b41485a4.svg" alt="QAAgility Logo">
+      </div>
+      <p>© 2026 QAAgility. Human + AI Quality Assurance. All rights reserved.</p>
+      <p style="color:rgba(15,23,42,0.58); font-size:12px;">sales@qaagility.com · +91 97699 47667</p>
+    </div>
+  </footer>
+
+  <!-- ================================================================
+       JAVASCRIPT — CALCULATOR ENGINE
+  ================================================================ -->
+  <script>
+    /* ── HELPERS ── */
+    const $ = id => document.getElementById(id);
+    const fmt = n => '$' + Math.round(n).toLocaleString('en-US');
+    const fmtK = n => {
+      if (Math.abs(n) >= 1000000) return '$' + (n/1000000).toFixed(1) + 'M';
+      if (Math.abs(n) >= 1000)    return '$' + (n/1000).toFixed(0) + 'K';
+      return '$' + Math.round(n).toLocaleString();
+    };
+    const pctSave = (b,a) => b > 0 ? '↓ ' + Math.round((b-a)/b*100) + '%' : '—';
+
+    function syncSlider(inputId, labelId, suffix) {
+      const val = $(inputId).value;
+      $(labelId).textContent = val + suffix;
+    }
+
+    /* ── MAIN CALC ── */
+    function calc() {
+      // ── INPUTS ──
+      const fte       = +$('inp_fte').value      || 0;
+      const salary    = +$('inp_salary').value   || 0;
+      const leads     = +$('inp_leads').value    || 0;
+      const leadSal   = +$('inp_lead_sal').value || 0;
+      const tools     = +$('inp_tools').value    || 0;
+      const infra     = +$('inp_infra').value    || 0;
+      const maint     = +$('inp_maint').value    || 0;
+      const bugs      = +$('inp_bugs').value     || 0;
+      const bugCost   = +$('inp_bug_cost').value || 0;
+      const fine      = +$('inp_fine').value     || 0;
+      const days      = +$('inp_days').value     || 0;
+      const autoNow   = +$('inp_auto').value     || 0;
+      const revDay    = +$('inp_rev_day').value  || 0;
+      const regionMult= +$('inp_region').value   || 0.55;
+      const model     =  $('inp_model').value;
+
+      // ── BEFORE ──
+      const b_sal   = fte * salary;
+      const b_lead  = leads * leadSal;
+      const b_tools = tools;
+      const b_infra = infra;
+      const b_maint = maint;
+      const b_bugs  = bugs * bugCost;
+      const b_fine  = fine;
+      // velocity drag: excess days over 3-day target × daily revenue
+      const b_vel   = Math.max(0, days - 3) * revDay * 24; // ~24 releases/yr estimate
+      const b_total = b_sal + b_lead + b_tools + b_infra + b_maint + b_bugs + b_fine + b_vel;
+
+      // ── AFTER QAAgility ──
+      // Headcount reduction — AI takes 50-65% of test execution
+      const fteReductionFactor = model === 'managed'  ? 0.40
+                               : model === 'augment'  ? 0.55
+                                                      : 0.65;
+      const a_sal   = b_sal  * fteReductionFactor;
+      // Lead stays — now focused on strategy not execution
+      const a_lead  = b_lead * 0.80;
+      // Tools consolidated — QAAgility brings its own platform
+      const a_tools = b_tools * 0.40;
+      // Infra — AI optimises environment usage
+      const a_infra = b_infra * 0.60;
+      // Maintenance — AI self-healing scripts cut upkeep 65%
+      const a_maint = b_maint * 0.30;
+      // Bugs — 98% catch rate (vs ~65% typical) → reduction proportional
+      const bugCatchImprovement = 0.85; // 85% fewer escape to prod
+      const a_bugs  = b_bugs  * (1 - bugCatchImprovement);
+      // Compliance — automated audit trails cut risk exposure 70%
+      const a_fine  = b_fine  * 0.30;
+      // Velocity — cycle cuts in half → half the drag
+      const a_vel   = b_vel   * 0.45;
+
+      // QAAgility engagement fee
+      let fee;
+      if (model === 'managed') {
+        fee = 22000 * 12 * regionMult;
+      } else if (model === 'augment') {
+        const qagilyFTE = Math.ceil(fte * (1 - fteReductionFactor) * 0.7);
+        fee = Math.max(qagilyFTE, 1) * 8500 * 12 * regionMult;
+      } else {
+        fee = 18000 * 12 * regionMult; // ~6 sprints/yr
+      }
+
+      const a_total = a_sal + a_lead + a_tools + a_infra + a_maint + a_bugs + a_fine + a_vel + fee;
+
+      // ── DERIVED ──
+      const savings   = b_total - a_total;
+      const roiPct    = fee > 0 ? Math.round((savings / fee) * 100) : 0;
+      const payback   = savings > 0 ? (fee / (savings / 12)).toFixed(1) : '—';
+      const newAuto   = Math.min(autoNow + 40, 82) + '%';
+      const newCycle  = Math.max(1, Math.round(days * 0.45)) + 'd';
+
+      // ── RENDER ──
+      $('r_savings').textContent     = fmtK(Math.max(savings, 0)).replace('$','');
+      $('r_savings_sub').textContent = savings > 0
+        ? `vs your current total QA cost of ${fmtK(b_total)}/yr`
+        : 'Adjust inputs to see your personalised estimate';
+      $('r_roi_pct').textContent   = roiPct + '%';
+      $('r_payback').textContent   = savings > 0 ? payback + ' mo' : '—';
+      $('r_new_auto').textContent  = newAuto;
+      $('r_new_cycle').textContent = newCycle;
+
+      // Table
+      function setRow(bId, aId, pId, before, after) {
+        $(bId).textContent = fmtK(before);
+        $(aId).textContent = fmtK(after);
+        $(pId).textContent = pctSave(before, after);
+      }
+      setRow('r_b_sal',  'r_a_sal',  'r_p_sal',  b_sal,   a_sal);
+      setRow('r_b_lead', 'r_a_lead', 'r_p_lead', b_lead,  a_lead);
+      setRow('r_b_tools','r_a_tools','r_p_tools', b_tools, a_tools);
+      setRow('r_b_infra','r_a_infra','r_p_infra', b_infra, a_infra);
+      setRow('r_b_maint','r_a_maint','r_p_maint', b_maint, a_maint);
+      setRow('r_b_bugs', 'r_a_bugs', 'r_p_bugs',  b_bugs,  a_bugs);
+      setRow('r_b_fine', 'r_a_fine', 'r_p_fine',  b_fine,  a_fine);
+      setRow('r_b_vel',  'r_a_vel',  'r_p_vel',   b_vel,   a_vel);
+      $('r_a_fee').textContent = fmtK(fee);
+
+      $('r_b_total').textContent = fmtK(b_total);
+      $('r_a_total').textContent = fmtK(a_total);
+      $('r_p_total').innerHTML   = savings > 0
+        ? `<span style="color:var(--color-success); font-weight:700;">↓ ${Math.round((savings/b_total)*100)}% saved</span>`
+        : '<span style="color:var(--color-warning);">See inputs</span>';
+
+      // Progress bars
+      const newAutoPct = Math.min(autoNow + 40, 82);
+      $('pb_before').style.width = autoNow + '%';
+      $('pb_after').style.width  = newAutoPct + '%';
+      $('prog_before_auto').textContent = autoNow + '%';
+      $('prog_after_auto').textContent  = newAutoPct + '%';
+
+      // KPIs
+      $('kpi_bugs_before').textContent = bugs;
+      $('kpi_bugs_after').textContent  = Math.max(1, Math.round(bugs * 0.15));
+      $('kpi_cycle').textContent       = newCycle;
+
+    }
+
+    /* ── INIT ── */
+    window.addEventListener('DOMContentLoaded', () => {
+      // init slider labels
+      syncSlider('inp_bugs', 'sv_bugs', '');
+      syncSlider('inp_days', 'sv_days', ' days');
+      syncSlider('inp_auto', 'sv_auto', '%');
+      calc();
+    });
+  </script>
+
+</body>
+</html>
